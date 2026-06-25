@@ -1,0 +1,20 @@
+{
+  "id": "f18c9354-c8bb-4f07-bd4d-54f1a08b5342",
+  "name": "Custom Space Icons",
+  "description": "Set custom icons for Zen spaces with URL or Data URL values.",
+  "homepage": "https://github.com/philipppollmann/zen-custom-workspace-icons",
+  "style": "https://raw.githubusercontent.com/philipppollmann/zen-custom-workspace-icons/main/chrome.css",
+  "readme": "https://raw.githubusercontent.com/philipppollmann/zen-custom-workspace-icons/main/README.md",
+  "image": "https://raw.githubusercontent.com/philipppollmann/zen-custom-workspace-icons/main/image.png",
+  "author": "Philipp",
+  "version": "0.1.0",
+  "tags": [
+    "spaces",
+    "workspace",
+    "icons",
+    "customization"
+  ],
+  "createdAt": "2026-06-25",
+  "updatedAt": "2026-06-25",
+  "preferences": "https://raw.githubusercontent.com/philipppollmann/zen-custom-workspace-icons/main/preferences.json"
+}

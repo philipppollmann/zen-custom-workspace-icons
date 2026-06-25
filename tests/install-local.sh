@@ -1,0 +1,552 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MARKER_START="/* BEGIN Zen Custom Workspace Icons local test install */"
+MARKER_END="/* END Zen Custom Workspace Icons local test install */"
+
+usage() {
+  cat <<'USAGE'
+Install Zen Custom Workspace Icons into a local Zen profile for testing.
+
+Usage:
+  tests/install-local.sh [--profile DIR] [--no-demo]
+  tests/install-local.sh --uninstall [--profile DIR]
+  tests/install-local.sh --apply-zen-patch DIR
+  tests/install-local.sh --install-app-ui APP_OR_DIR [--profile DIR]
+  tests/install-local.sh --uninstall-app-ui APP_OR_DIR [--profile DIR]
+
+Profile selection:
+  --profile DIR       Zen profile directory from about:support
+  ZEN_PROFILE_DIR     Same as --profile
+
+Native Zen UI patch:
+  --apply-zen-patch DIR
+                      Apply the native "Set Icon URL" patch to a Zen Desktop
+                      source checkout. This enables the right-click UI action
+                      only when you run/build Zen from that patched source.
+
+Installed app UI loader:
+  --install-app-ui APP_OR_DIR
+                      Install a local Autoconfig loader into a built Zen app
+                      installation and copy the UI script into the selected
+                      profile. Accepts /Applications/Zen.app on macOS or the
+                      directory containing application.ini on Windows.
+                      This modifies the app installation and can be overwritten
+                      by Zen updates.
+  --uninstall-app-ui APP_OR_DIR
+                      Remove the local Autoconfig loader and profile UI script.
+
+Icon configuration:
+  SPACE_1_ICON ... SPACE_10_ICON must be complete CSS image values.
+  Example:
+    SPACE_1_ICON='url("https://example.com/icon.svg")' tests/install-local.sh
+
+Optional sizing:
+  ICON_SIZE=18        Number in px, without unit
+  ICON_RADIUS=4       Number in px, without unit
+  ICON_FIT=contain    contain or cover
+
+If no SPACE_*_ICON value is provided, a demo icon is installed for Space 1.
+Use --no-demo to install the CSS without enabling any custom icon.
+USAGE
+}
+
+die() {
+  printf 'error: %s\n' "$*" >&2
+  exit 1
+}
+
+repo_root() {
+  local script_dir
+  script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+  cd -- "$script_dir/.." && pwd
+}
+
+escape_js_string() {
+  local value="$1"
+  value="${value//\\/\\\\}"
+  value="${value//\"/\\\"}"
+  printf '%s' "$value"
+}
+
+remove_marked_block() {
+  local file="$1"
+  [[ -f "$file" ]] || return 0
+
+  local tmp
+  tmp="$(mktemp "${file}.tmp.XXXXXX")"
+  awk -v start="$MARKER_START" -v end="$MARKER_END" '
+    index($0, start) { skip = 1; next }
+    index($0, end) { skip = 0; next }
+    !skip { print }
+  ' "$file" > "$tmp"
+  mv "$tmp" "$file"
+}
+
+has_marker() {
+  local file="$1"
+  local marker="$2"
+  [[ -f "$file" ]] || return 1
+  grep -Fq "$marker" "$file"
+}
+
+normalize_path() {
+  local path="$1"
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -u "$path" 2>/dev/null || printf '%s\n' "$path"
+  else
+    printf '%s\n' "$path"
+  fi
+}
+
+resolve_zen_resources() {
+  local app input
+  input="$1"
+  app="$(normalize_path "$input")"
+
+  [[ -e "$app" ]] || die "Zen app/install path does not exist: $input"
+
+  if [[ -f "$app" ]]; then
+    app="$(cd -- "$(dirname -- "$app")" && pwd)"
+  fi
+
+  if [[ -d "$app/Contents/Resources" && -f "$app/Contents/Resources/application.ini" ]]; then
+    printf '%s\n' "$app/Contents/Resources"
+    return 0
+  fi
+
+  if [[ -d "$app" && -f "$app/application.ini" ]]; then
+    printf '%s\n' "$app"
+    return 0
+  fi
+
+  die "does not look like a Zen/Firefox app installation: $input"
+}
+
+install_app_ui_loader() {
+  local app="$1"
+  local profile="$2"
+  local root resources defaults_pref_dir pref_file cfg_file profile_chrome ui_source ui_target existing_config
+
+  root="$(repo_root)"
+  ui_source="$root/tests/zen-custom-workspace-icons-ui.uc.js"
+  [[ -f "$ui_source" ]] || die "missing UI script at $ui_source"
+
+  resources="$(resolve_zen_resources "$app")"
+  defaults_pref_dir="$resources/defaults/pref"
+  pref_file="$defaults_pref_dir/zen-custom-workspace-icons-autoconfig.js"
+  cfg_file="$resources/zen-custom-workspace-icons.cfg"
+
+  if [[ -d "$defaults_pref_dir" ]]; then
+    existing_config="$(
+      grep -R "general.config.filename" "$defaults_pref_dir" 2>/dev/null || true
+    )"
+    if [[ -n "$existing_config" && "$existing_config" != *"zen-custom-workspace-icons.cfg"* ]]; then
+      die "another Autoconfig filename is already configured in $defaults_pref_dir"
+    fi
+  fi
+
+  profile_chrome="$profile/chrome"
+  ui_target="$profile_chrome/zen-custom-workspace-icons-ui.uc.js"
+  mkdir -p "$defaults_pref_dir" "$profile_chrome"
+
+  cat > "$pref_file" <<'AUTOCONFIG_PREFS'
+// Zen Custom Workspace Icons app UI loader.
+pref("general.config.filename", "zen-custom-workspace-icons.cfg");
+pref("general.config.obscure_value", 0);
+pref("general.config.sandbox_enabled", false);
+AUTOCONFIG_PREFS
+
+  cat > "$cfg_file" <<'AUTOCONFIG_CFG'
+// Zen Custom Workspace Icons Autoconfig loader.
+// This file is generated by tests/install-local.sh.
+(function () {
+  const MARKER = "Zen Custom Workspace Icons Autoconfig loader";
+
+  function getServices() {
+    if (typeof Services !== "undefined") {
+      return Services;
+    }
+    if (typeof ChromeUtils !== "undefined" && ChromeUtils.importESModule) {
+      return ChromeUtils.importESModule("resource://gre/modules/Services.sys.mjs").Services;
+    }
+    return Components.utils.import("resource://gre/modules/Services.jsm", {}).Services;
+  }
+
+  try {
+    const ServicesRef = getServices();
+    const CiRef = Components.interfaces;
+
+    function getProfileScriptURL() {
+      const file = ServicesRef.dirsvc.get("ProfD", CiRef.nsIFile);
+      file.append("chrome");
+      file.append("zen-custom-workspace-icons-ui.uc.js");
+      if (!file.exists()) {
+        return null;
+      }
+      return ServicesRef.io.newFileURI(file).spec;
+    }
+
+    function loadIntoWindow(win) {
+      if (!win || win.__zcwiAutoconfigLoaded) {
+        return;
+      }
+      if (win.location?.href !== "chrome://browser/content/browser.xhtml") {
+        return;
+      }
+      win.__zcwiAutoconfigLoaded = true;
+      const scriptURL = getProfileScriptURL();
+      if (!scriptURL) {
+        return;
+      }
+      ServicesRef.scriptloader.loadSubScript(scriptURL, win, "UTF-8");
+    }
+
+    ServicesRef.obs.addObserver(function zcwiChromeWindowObserver(subject, topic) {
+      if (topic !== "chrome-document-global-created") {
+        return;
+      }
+      subject.addEventListener(
+        "DOMContentLoaded",
+        function () {
+          loadIntoWindow(subject);
+        },
+        { once: true }
+      );
+    }, "chrome-document-global-created");
+  } catch (error) {
+    Components.utils.reportError(`${MARKER}: ${error}`);
+  }
+})();
+AUTOCONFIG_CFG
+
+  install -m 0644 "$ui_source" "$ui_target"
+
+  printf 'Installed Zen Custom Workspace Icons app UI loader:\n'
+  printf '  %s\n' "$pref_file"
+  printf '  %s\n' "$cfg_file"
+  printf '  %s\n' "$ui_target"
+  printf 'Fully quit and restart Zen to load the right-click UI.\n'
+}
+
+uninstall_app_ui_loader() {
+  local app="$1"
+  local profile="$2"
+  local resources pref_file cfg_file ui_target
+
+  resources="$(resolve_zen_resources "$app")"
+  pref_file="$resources/defaults/pref/zen-custom-workspace-icons-autoconfig.js"
+  cfg_file="$resources/zen-custom-workspace-icons.cfg"
+  ui_target="$profile/chrome/zen-custom-workspace-icons-ui.uc.js"
+
+  if has_marker "$pref_file" "Zen Custom Workspace Icons app UI loader"; then
+    rm -f "$pref_file"
+  fi
+  if has_marker "$cfg_file" "Zen Custom Workspace Icons Autoconfig loader"; then
+    rm -f "$cfg_file"
+  fi
+  if has_marker "$ui_target" "Zen Custom Workspace Icons profile UI"; then
+    rm -f "$ui_target"
+  fi
+
+  printf 'Removed Zen Custom Workspace Icons app UI loader from:\n'
+  printf '  %s\n' "$app"
+  printf '  %s\n' "$profile"
+  printf 'Fully quit and restart Zen to apply the removal.\n'
+}
+
+apply_zen_patch() {
+  local zen_source="$1"
+  local root patch_file
+
+  root="$(repo_root)"
+  patch_file="$root/patches/zen-desktop-workspace-icon-url.patch"
+
+  [[ -d "$zen_source" ]] || die "Zen source directory does not exist: $zen_source"
+  [[ -f "$patch_file" ]] || die "missing Zen UI patch at $patch_file"
+  [[ -d "$zen_source/.git" ]] || die "Zen source directory is not a git checkout: $zen_source"
+  [[ -f "$zen_source/src/zen/spaces/ZenSpaceManager.mjs" ]] || die "does not look like a Zen Desktop source checkout: $zen_source"
+
+  if git -C "$zen_source" apply --check "$patch_file" 2>/dev/null; then
+    git -C "$zen_source" apply "$patch_file"
+    printf 'Applied native Zen UI patch to:\n  %s\n' "$zen_source"
+    printf 'Next, run/build Zen from that source checkout.\n'
+    return 0
+  fi
+
+  if git -C "$zen_source" apply --reverse --check "$patch_file" 2>/dev/null; then
+    printf 'Native Zen UI patch is already applied in:\n  %s\n' "$zen_source"
+    printf 'Run/build Zen from that source checkout to use the Set Icon URL UI.\n'
+    return 0
+  fi
+
+  die "could not apply the Zen UI patch cleanly. Check the Zen source version or local changes in: $zen_source"
+}
+
+profile_from_ini() {
+  local base="$1"
+  local ini="$base/profiles.ini"
+  [[ -f "$ini" ]] || return 1
+
+  local record path is_relative
+  record="$(
+    awk '
+      BEGIN { path = ""; rel = "1"; def = "0"; first = ""; best = "" }
+      function flush() {
+        if (path != "") {
+          if (first == "") first = path "|" rel
+          if (def == "1" && best == "") best = path "|" rel
+        }
+        path = ""; rel = "1"; def = "0"
+      }
+      /^\[/ { flush(); next }
+      /^Path=/ { path = substr($0, 6); next }
+      /^IsRelative=/ { rel = substr($0, 12); next }
+      /^Default=1/ { def = "1"; next }
+      END { flush(); print best != "" ? best : first }
+    ' "$ini"
+  )"
+
+  [[ -n "$record" ]] || return 1
+  path="${record%%|*}"
+  is_relative="${record##*|}"
+
+  if [[ "$is_relative" == "1" ]]; then
+    printf '%s/%s\n' "$base" "$path"
+  else
+    printf '%s\n' "$path"
+  fi
+}
+
+profile_from_installs_ini() {
+  local base="$1"
+  local ini="$base/installs.ini"
+  [[ -f "$ini" ]] || return 1
+
+  local path
+  path="$(
+    awk -F= '
+      $1 == "Default" && $2 != "" {
+        print $2
+        exit
+      }
+    ' "$ini"
+  )"
+
+  [[ -n "$path" ]] || return 1
+
+  case "$path" in
+    /*) printf '%s\n' "$path" ;;
+    *) printf '%s/%s\n' "$base" "$path" ;;
+  esac
+}
+
+detect_profile() {
+  local candidates=(
+    "$HOME/Library/Application Support/zen"
+    "$HOME/Library/Application Support/Zen"
+    "$HOME/.zen"
+    "$HOME/.var/app/app.zen_browser.zen/.zen"
+  )
+
+  local windows_base base profile
+  for windows_base in "${APPDATA:-}" "${LOCALAPPDATA:-}"; do
+    [[ -n "$windows_base" ]] || continue
+    windows_base="$(normalize_path "$windows_base")"
+    candidates+=(
+      "$windows_base/zen"
+      "$windows_base/Zen"
+      "$windows_base/Zen Browser"
+      "$windows_base/zen-browser"
+    )
+  done
+
+  for base in "${candidates[@]}"; do
+    if profile="$(profile_from_installs_ini "$base" 2>/dev/null)"; then
+      [[ -d "$profile" ]] && {
+        printf '%s\n' "$profile"
+        return 0
+      }
+    fi
+  done
+
+  for base in "${candidates[@]}"; do
+    if profile="$(profile_from_ini "$base" 2>/dev/null)"; then
+      [[ -d "$profile" ]] && {
+        printf '%s\n' "$profile"
+        return 0
+      }
+    fi
+  done
+
+  for base in "${candidates[@]}"; do
+    [[ -d "$base" ]] || continue
+    profile="$(find "$base" -maxdepth 2 -type d \( -iname '*.default*' -o -iname '*.release*' \) -print -quit 2>/dev/null || true)"
+    [[ -n "$profile" ]] && {
+      printf '%s\n' "$profile"
+      return 0
+    }
+  done
+
+  return 1
+}
+
+profile_dir="${ZEN_PROFILE_DIR:-}"
+zen_source_dir=""
+install_app_ui=""
+uninstall_app_ui=""
+install_demo=1
+uninstall=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --apply-zen-patch)
+      [[ $# -ge 2 ]] || die "--apply-zen-patch requires a Zen Desktop source directory"
+      zen_source_dir="$2"
+      shift 2
+      ;;
+    --install-app-ui)
+      [[ $# -ge 2 ]] || die "--install-app-ui requires a Zen app/install path"
+      install_app_ui="$2"
+      shift 2
+      ;;
+    --uninstall-app-ui)
+      [[ $# -ge 2 ]] || die "--uninstall-app-ui requires a Zen app/install path"
+      uninstall_app_ui="$2"
+      shift 2
+      ;;
+    --profile)
+      [[ $# -ge 2 ]] || die "--profile requires a directory"
+      profile_dir="$2"
+      shift 2
+      ;;
+    --no-demo)
+      install_demo=0
+      shift
+      ;;
+    --uninstall)
+      uninstall=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -*)
+      die "unknown option: $1"
+      ;;
+    *)
+      [[ -z "$profile_dir" ]] || die "profile directory was provided more than once"
+      profile_dir="$1"
+      shift
+      ;;
+  esac
+done
+
+mode_count=0
+[[ -n "$zen_source_dir" ]] && mode_count=$((mode_count + 1))
+[[ -n "$install_app_ui" ]] && mode_count=$((mode_count + 1))
+[[ -n "$uninstall_app_ui" ]] && mode_count=$((mode_count + 1))
+[[ "$uninstall" == "1" ]] && mode_count=$((mode_count + 1))
+[[ "$mode_count" -le 1 ]] || die "choose only one install/uninstall mode"
+
+if [[ -n "$zen_source_dir" ]]; then
+  apply_zen_patch "$zen_source_dir"
+  exit 0
+fi
+
+if [[ -z "$profile_dir" ]]; then
+  profile_dir="$(detect_profile)" || {
+    usage >&2
+    die "could not auto-detect a Zen profile. Open about:support and pass the Profile Folder with --profile."
+  }
+fi
+
+[[ -d "$profile_dir" ]] || die "profile directory does not exist: $profile_dir"
+
+if [[ -n "$install_app_ui" ]]; then
+  install_app_ui_loader "$install_app_ui" "$profile_dir"
+  exit 0
+fi
+
+if [[ -n "$uninstall_app_ui" ]]; then
+  uninstall_app_ui_loader "$uninstall_app_ui" "$profile_dir"
+  exit 0
+fi
+
+root="$(repo_root)"
+chrome_source="$root/chrome.css"
+[[ -f "$chrome_source" ]] || die "missing chrome.css at $chrome_source"
+
+chrome_dir="$profile_dir/chrome"
+user_chrome="$chrome_dir/userChrome.css"
+user_js="$profile_dir/user.js"
+
+mkdir -p "$chrome_dir"
+touch "$user_chrome" "$user_js"
+
+remove_marked_block "$user_chrome"
+remove_marked_block "$user_js"
+
+if [[ "$uninstall" == "1" ]]; then
+  printf 'Removed local test install from:\n  %s\n  %s\n' "$user_chrome" "$user_js"
+  printf 'Restart Zen Browser to apply the removal.\n'
+  exit 0
+fi
+
+icon_size="${ICON_SIZE:-18}"
+icon_radius="${ICON_RADIUS:-4}"
+icon_fit="${ICON_FIT:-contain}"
+
+declare -a icons
+any_icon=0
+for i in {1..10}; do
+  var_name="SPACE_${i}_ICON"
+  icons[$i]="${!var_name:-}"
+  [[ -n "${icons[$i]}" ]] && any_icon=1
+done
+
+if [[ "$any_icon" == "0" && "$install_demo" == "1" ]]; then
+  icons[1]="url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%231f6feb'/%3E%3Cpath d='M42 18 35 38 15 45 22 25z' fill='white'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%230b1020'/%3E%3C/svg%3E\")"
+  printf 'No SPACE_*_ICON provided; installing demo icon for Space 1.\n'
+fi
+
+{
+  printf '\n%s\n' "$MARKER_START"
+  printf '/* Generated by tests/install-local.sh. */\n'
+  printf ':root {\n'
+  printf '  --uc-zen_custom_space_icons-icon_size: %s;\n' "$icon_size"
+  printf '  --uc-zen_custom_space_icons-icon_radius: %s;\n' "$icon_radius"
+  printf '  --uc-zen_custom_space_icons-icon_fit: %s;\n' "$icon_fit"
+  for i in {1..10}; do
+    printf '  --uc-zen_custom_space_icons-space_%s-icon: %s;\n' "$i" "${icons[$i]:-none}"
+  done
+  printf '}\n\n'
+  cat "$chrome_source"
+  printf '\n%s\n' "$MARKER_END"
+} >> "$user_chrome"
+
+{
+  printf '\n%s\n' "$MARKER_START"
+  printf '// Generated by tests/install-local.sh.\n'
+  printf 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);\n'
+  printf 'user_pref("uc.zen_custom_space_icons.icon_size", "%s");\n' "$(escape_js_string "$icon_size")"
+  printf 'user_pref("uc.zen_custom_space_icons.icon_radius", "%s");\n' "$(escape_js_string "$icon_radius")"
+  printf 'user_pref("uc.zen_custom_space_icons.icon_fit", "%s");\n' "$(escape_js_string "$icon_fit")"
+  for i in {1..10}; do
+    icon="${icons[$i]:-}"
+    if [[ -n "$icon" ]]; then
+      printf 'user_pref("uc.zen_custom_space_icons.space_%s.enabled", true);\n' "$i"
+      printf 'user_pref("uc.zen_custom_space_icons.space_%s.icon", "%s");\n' "$i" "$(escape_js_string "$icon")"
+    else
+      printf 'user_pref("uc.zen_custom_space_icons.space_%s.enabled", false);\n' "$i"
+      printf 'user_pref("uc.zen_custom_space_icons.space_%s.icon", "none");\n' "$i"
+    fi
+  done
+  printf '%s\n' "$MARKER_END"
+} >> "$user_js"
+
+printf 'Installed local Zen Custom Workspace Icons test files:\n'
+printf '  %s\n' "$user_chrome"
+printf '  %s\n' "$user_js"
+printf 'Restart Zen Browser to apply the install.\n'

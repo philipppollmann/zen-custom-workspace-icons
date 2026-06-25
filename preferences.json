@@ -1,0 +1,198 @@
+[
+  {
+    "property": "uc.zen_custom_space_icons.icon_size",
+    "label": "Icon size",
+    "type": "dropdown",
+    "defaultValue": "18",
+    "options": [
+      {
+        "label": "14 px",
+        "value": "14"
+      },
+      {
+        "label": "16 px",
+        "value": "16"
+      },
+      {
+        "label": "18 px",
+        "value": "18"
+      },
+      {
+        "label": "20 px",
+        "value": "20"
+      },
+      {
+        "label": "24 px",
+        "value": "24"
+      },
+      {
+        "label": "28 px",
+        "value": "28"
+      }
+    ]
+  },
+  {
+    "property": "uc.zen_custom_space_icons.icon_radius",
+    "label": "Icon corner radius",
+    "type": "dropdown",
+    "defaultValue": "4",
+    "options": [
+      {
+        "label": "Square",
+        "value": "0"
+      },
+      {
+        "label": "4 px",
+        "value": "4"
+      },
+      {
+        "label": "6 px",
+        "value": "6"
+      },
+      {
+        "label": "8 px",
+        "value": "8"
+      },
+      {
+        "label": "Round",
+        "value": "999"
+      }
+    ]
+  },
+  {
+    "property": "uc.zen_custom_space_icons.icon_fit",
+    "label": "Icon fit",
+    "type": "dropdown",
+    "defaultValue": "contain",
+    "options": [
+      {
+        "label": "Contain",
+        "value": "contain"
+      },
+      {
+        "label": "Cover",
+        "value": "cover"
+      }
+    ]
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_1.enabled",
+    "label": "Enable Space 1 custom icon",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_1.icon",
+    "label": "Space 1 icon CSS value",
+    "type": "string",
+    "defaultValue": "none"
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_2.enabled",
+    "label": "Enable Space 2 custom icon",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_2.icon",
+    "label": "Space 2 icon CSS value",
+    "type": "string",
+    "defaultValue": "none"
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_3.enabled",
+    "label": "Enable Space 3 custom icon",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_3.icon",
+    "label": "Space 3 icon CSS value",
+    "type": "string",
+    "defaultValue": "none"
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_4.enabled",
+    "label": "Enable Space 4 custom icon",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_4.icon",
+    "label": "Space 4 icon CSS value",
+    "type": "string",
+    "defaultValue": "none"
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_5.enabled",
+    "label": "Enable Space 5 custom icon",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_5.icon",
+    "label": "Space 5 icon CSS value",
+    "type": "string",
+    "defaultValue": "none"
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_6.enabled",
+    "label": "Enable Space 6 custom icon",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_6.icon",
+    "label": "Space 6 icon CSS value",
+    "type": "string",
+    "defaultValue": "none"
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_7.enabled",
+    "label": "Enable Space 7 custom icon",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_7.icon",
+    "label": "Space 7 icon CSS value",
+    "type": "string",
+    "defaultValue": "none"
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_8.enabled",
+    "label": "Enable Space 8 custom icon",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_8.icon",
+    "label": "Space 8 icon CSS value",
+    "type": "string",
+    "defaultValue": "none"
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_9.enabled",
+    "label": "Enable Space 9 custom icon",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_9.icon",
+    "label": "Space 9 icon CSS value",
+    "type": "string",
+    "defaultValue": "none"
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_10.enabled",
+    "label": "Enable Space 10 custom icon",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "uc.zen_custom_space_icons.space_10.icon",
+    "label": "Space 10 icon CSS value",
+    "type": "string",
+    "defaultValue": "none"
+  }
+]

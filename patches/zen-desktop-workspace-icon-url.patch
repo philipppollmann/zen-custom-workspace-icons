@@ -1,0 +1,342 @@
+diff --git a/locales/en-US/browser/browser/zen-workspaces.ftl b/locales/en-US/browser/browser/zen-workspaces.ftl
+index d57b1e0..c3c93ad 100644
+--- a/locales/en-US/browser/browser/zen-workspaces.ftl
++++ b/locales/en-US/browser/browser/zen-workspaces.ftl
+@@ -29,6 +29,13 @@ zen-workspaces-panel-change-name =
+ zen-workspaces-panel-change-icon =
+     .label = Change Icon
+ 
++zen-workspaces-panel-set-icon-url =
++    .label = Set Icon URL
++
++zen-workspaces-panel-set-icon-url-title = Set Space Icon URL
++zen-workspaces-panel-set-icon-url-label = Enter an image URL or Data URL. Leave empty to clear the custom icon.
++zen-workspaces-panel-set-icon-url-invalid = Invalid image URL
++
+ zen-workspaces-panel-context-default-profile =
+     .label = Set Profile
+ 
+diff --git a/src/browser/base/content/zen-commands.inc.xhtml b/src/browser/base/content/zen-commands.inc.xhtml
+index 3019fea..4f0a331 100644
+--- a/src/browser/base/content/zen-commands.inc.xhtml
++++ b/src/browser/base/content/zen-commands.inc.xhtml
+@@ -45,6 +45,7 @@
+   <command id="cmd_zenOpenSpaceRoutingSettings" />
+   <command id="cmd_zenChangeWorkspaceName" />
+   <command id="cmd_zenChangeWorkspaceIcon" />
++  <command id="cmd_zenSetWorkspaceIconURL" />
+   <command id="cmd_zenReorderWorkspaces" />
+   <command id="cmd_zenOpenWorkspaceCreation" />
+ 
+diff --git a/src/browser/base/content/zen-panels/popups.inc b/src/browser/base/content/zen-panels/popups.inc
+index 2ff9238..21a81f9 100644
+--- a/src/browser/base/content/zen-panels/popups.inc
++++ b/src/browser/base/content/zen-panels/popups.inc
+@@ -13,6 +13,7 @@
+ <menupopup id="zenWorkspaceMoreActions">
+   <menuitem id="context_zenEditWorkspace" data-l10n-id="zen-workspaces-panel-change-name" command="cmd_zenChangeWorkspaceName"/>
+   <menuitem id="context_zenEditWorkspaceIcon" data-l10n-id="zen-workspaces-panel-change-icon" command="cmd_zenChangeWorkspaceIcon"/>
++  <menuitem id="context_zenSetWorkspaceIconURL" data-l10n-id="zen-workspaces-panel-set-icon-url" command="cmd_zenSetWorkspaceIconURL"/>
+   <menuitem class="zenToolbarThemePicker"
+           id="context_zenChangeWorkspaceTheme"
+           data-l10n-id="zen-workspaces-change-theme"
+diff --git a/src/zen/common/modules/ZenMenubar.mjs b/src/zen/common/modules/ZenMenubar.mjs
+index b6c5144..6b5b804 100644
+--- a/src/zen/common/modules/ZenMenubar.mjs
++++ b/src/zen/common/modules/ZenMenubar.mjs
+@@ -86,6 +86,7 @@ export class nsZenMenuBar {
+           <menuitem data-l10n-id="zen-workspaces-change-theme" command="cmd_zenOpenZenThemePicker"/>
+           <menuitem data-l10n-id="zen-workspaces-panel-change-name" command="cmd_zenChangeWorkspaceName"/>
+           <menuitem data-l10n-id="zen-workspaces-panel-change-icon" command="cmd_zenChangeWorkspaceIcon"/>
++          <menuitem data-l10n-id="zen-workspaces-panel-set-icon-url" command="cmd_zenSetWorkspaceIconURL"/>
+           <menuseparator/>
+           <menuitem 
+             data-l10n-id="zen-panel-ui-workspaces-change-forward"
+diff --git a/src/zen/common/zen-sets.js b/src/zen/common/zen-sets.js
+index e9fecea..a602eed 100644
+--- a/src/zen/common/zen-sets.js
++++ b/src/zen/common/zen-sets.js
+@@ -100,6 +100,9 @@ document.addEventListener(
+           case "cmd_zenChangeWorkspaceIcon":
+             gZenWorkspaces.changeWorkspaceIcon();
+             break;
++          case "cmd_zenSetWorkspaceIconURL":
++            gZenWorkspaces.setWorkspaceIconURL();
++            break;
+           case "cmd_zenReorderWorkspaces":
+             gZenUIManager.showToast("zen-workspaces-how-to-reorder-title", {
+               timeout: 9000,
+diff --git a/src/zen/space-routing/ZenSpaceRoutingDialog.mjs b/src/zen/space-routing/ZenSpaceRoutingDialog.mjs
+index 786a4fc..23ed530 100644
+--- a/src/zen/space-routing/ZenSpaceRoutingDialog.mjs
++++ b/src/zen/space-routing/ZenSpaceRoutingDialog.mjs
+@@ -387,7 +387,7 @@ export class nsZenSpaceRoutingDialog {
+       menuItem.setAttribute("value", id || text);
+ 
+       if (iconPath) {
+-        if (iconPath.startsWith("chrome://")) {
++        if (this.openerWindow.gZenWorkspaces.isWorkspaceImageIcon(iconPath)) {
+           menuItem.setAttribute("class", "menuitem-iconic");
+           menuItem.setAttribute("image", iconPath);
+         } else {
+diff --git a/src/zen/spaces/ZenSpaceIcons.mjs b/src/zen/spaces/ZenSpaceIcons.mjs
+index b8bfb67..1549d81 100644
+--- a/src/zen/spaces/ZenSpaceIcons.mjs
++++ b/src/zen/spaces/ZenSpaceIcons.mjs
+@@ -111,9 +111,9 @@ class nsZenWorkspaceIcons extends MozXULElement {
+     button.setAttribute("context", "zenWorkspaceMoreActions");
+     const icon = document.createXULElement("label");
+     icon.setAttribute("class", "zen-workspace-icon");
+-    const isSvgIcon = workspace.icon && workspace.icon.endsWith(".svg");
++    const isImageIcon = gZenWorkspaces.isWorkspaceImageIcon(workspace.icon);
+     if (gZenWorkspaces.workspaceHasIcon(workspace)) {
+-      if (isSvgIcon) {
++      if (isImageIcon) {
+         const image = document.createElement("img");
+         image.src = workspace.icon;
+         image.classList.add("zen-workspace-icon");
+@@ -124,7 +124,7 @@ class nsZenWorkspaceIcons extends MozXULElement {
+     } else {
+       icon.setAttribute("no-icon", true);
+     }
+-    if (!isSvgIcon) {
++    if (!isImageIcon) {
+       button.appendChild(icon);
+     }
+     button.addEventListener("command", this);
+diff --git a/src/zen/spaces/ZenSpaceManager.mjs b/src/zen/spaces/ZenSpaceManager.mjs
+index 51cfb89..245cbc6 100644
+--- a/src/zen/spaces/ZenSpaceManager.mjs
++++ b/src/zen/spaces/ZenSpaceManager.mjs
+@@ -968,6 +968,50 @@ class nsZenWorkspaces {
+     });
+   }
+ 
++  async setWorkspaceIconURL() {
++    const workspaceId =
++      this.#contextMenuData?.workspaceId || this.activeWorkspace;
++    const workspace = this.getWorkspaceFromId(workspaceId);
++    if (!workspace) {
++      console.warn("No workspace found to set icon URL");
++      return;
++    }
++
++    const [title, label] = await document.l10n.formatValues([
++      { id: "zen-workspaces-panel-set-icon-url-title" },
++      { id: "zen-workspaces-panel-set-icon-url-label" },
++    ]);
++    const result = {
++      value: this.isWorkspaceImageIcon(workspace.icon) ? workspace.icon : "",
++    };
++    const confirmed = Services.prompt.prompt(
++      window,
++      title,
++      label,
++      result,
++      null,
++      { value: false }
++    );
++    if (!confirmed) {
++      return;
++    }
++
++    const iconURL = result.value.trim();
++    if (!iconURL) {
++      workspace.icon = "";
++      await this.saveWorkspace(workspace);
++      return;
++    }
++
++    if (!this.isWorkspaceImageIcon(iconURL)) {
++      gZenUIManager.showToast("zen-workspaces-panel-set-icon-url-invalid");
++      return;
++    }
++
++    workspace.icon = iconURL;
++    await this.saveWorkspace(workspace);
++  }
++
+   shouldCloseWindow() {
+     return (
+       !window.toolbar.visible ||
+@@ -1105,12 +1149,12 @@ class nsZenWorkspaces {
+       item.setAttribute(disableCurrent ? "disabled" : "checked", true);
+     }
+     let name = workspace.name;
+-    const iconIsSvg = workspace.icon && workspace.icon.endsWith(".svg");
+-    if (workspace.icon && workspace.icon !== "" && !iconIsSvg) {
++    const iconIsImage = this.isWorkspaceImageIcon(workspace.icon);
++    if (workspace.icon && workspace.icon !== "" && !iconIsImage) {
+       name = `${workspace.icon}  ${name}`;
+     }
+     item.setAttribute("label", name);
+-    if (iconIsSvg) {
++    if (iconIsImage) {
+       item.setAttribute("image", workspace.icon);
+       item.classList.add("zen-workspace-context-icon");
+     }
+@@ -1249,6 +1293,15 @@ class nsZenWorkspaces {
+     return workspace.icon && workspace.icon !== "";
+   }
+ 
++  isWorkspaceImageIcon(icon) {
++    return (
++      typeof icon === "string" &&
++      /^(?:https?:\/\/|data:image\/|chrome:\/\/|resource:\/\/|moz-extension:\/\/|blob:)/i.test(
++        icon
++      )
++    );
++  }
++
+   getWorkspaceIcon(workspace) {
+     if (this.workspaceHasIcon(workspace)) {
+       return workspace.icon;
+@@ -1879,7 +1932,7 @@ class nsZenWorkspaces {
+     }
+     const icon = this.getWorkspaceIcon(currentWorkspace);
+     indicatorIcon.innerHTML = "";
+-    if (icon?.endsWith(".svg")) {
++    if (this.isWorkspaceImageIcon(icon)) {
+       const img = document.createElement("img");
+       img.src = icon;
+       indicatorIcon.appendChild(img);
+diff --git a/src/zen/tests/spaces/browser.toml b/src/zen/tests/spaces/browser.toml
+index a6bdae3..1a9c3a2 100644
+--- a/src/zen/tests/spaces/browser.toml
++++ b/src/zen/tests/spaces/browser.toml
+@@ -31,3 +31,5 @@ support-files = [
+ ["browser_unload_all_other_spaces.js"]
+ 
+ ["browser_workspace_bookmarks.js"]
++
++["browser_workspace_icon_url.js"]
+diff --git a/src/zen/tests/spaces/browser_workspace_icon_url.js b/src/zen/tests/spaces/browser_workspace_icon_url.js
+new file mode 100644
+index 0000000..2c0c82c
+--- /dev/null
++++ b/src/zen/tests/spaces/browser_workspace_icon_url.js
+@@ -0,0 +1,87 @@
++/* Any copyright is dedicated to the Public Domain.
++   https://creativecommons.org/publicdomain/zero/1.0/ */
++
++"use strict";
++
++function mockPrompt(value) {
++  const original = Services.prompt;
++  Services.prompt = {
++    QueryInterface: ChromeUtils.generateQI([Ci.nsIPromptService]),
++    prompt(win, title, label, result) {
++      if (value === null) {
++        return false;
++      }
++      result.value = value;
++      return true;
++    },
++  };
++  return () => {
++    Services.prompt = original;
++  };
++}
++
++add_task(async function test_SetWorkspaceIconURL() {
++  const workspace = gZenWorkspaces.getActiveWorkspace();
++  const originalIcon = workspace.icon;
++  const iconURL =
++    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E";
++  const restorePrompt = mockPrompt(iconURL);
++
++  try {
++    await gZenWorkspaces.setWorkspaceIconURL();
++
++    Assert.equal(
++      gZenWorkspaces.getWorkspaceFromId(workspace.uuid).icon,
++      iconURL,
++      "The workspace icon should be updated to the entered image URL"
++    );
++    Assert.ok(
++      gZenWorkspaces.isWorkspaceImageIcon(iconURL),
++      "The entered URL should be treated as an image icon"
++    );
++  } finally {
++    restorePrompt();
++    workspace.icon = originalIcon;
++    gZenWorkspaces.saveWorkspace(workspace);
++  }
++});
++
++add_task(async function test_SetWorkspaceIconURLRejectsInvalidURL() {
++  const workspace = gZenWorkspaces.getActiveWorkspace();
++  const originalIcon = workspace.icon;
++  const restorePrompt = mockPrompt("not-an-image-url");
++
++  try {
++    await gZenWorkspaces.setWorkspaceIconURL();
++
++    Assert.equal(
++      gZenWorkspaces.getWorkspaceFromId(workspace.uuid).icon,
++      originalIcon,
++      "Invalid image URLs should not overwrite the existing workspace icon"
++    );
++  } finally {
++    restorePrompt();
++  }
++});
++
++add_task(async function test_SetWorkspaceIconURLCanClearIcon() {
++  const workspace = gZenWorkspaces.getActiveWorkspace();
++  const originalIcon = workspace.icon;
++  workspace.icon = "https://example.com/icon.png";
++  gZenWorkspaces.saveWorkspace(workspace);
++  const restorePrompt = mockPrompt("");
++
++  try {
++    await gZenWorkspaces.setWorkspaceIconURL();
++
++    Assert.equal(
++      gZenWorkspaces.getWorkspaceFromId(workspace.uuid).icon,
++      "",
++      "Empty input should clear the custom workspace icon"
++    );
++  } finally {
++    restorePrompt();
++    workspace.icon = originalIcon;
++    gZenWorkspaces.saveWorkspace(workspace);
++  }
++});
+diff --git a/src/zen/urlbar/ZenUBActionsProvider.sys.mjs b/src/zen/urlbar/ZenUBActionsProvider.sys.mjs
+index 6814e12..b2d7bbd 100644
+--- a/src/zen/urlbar/ZenUBActionsProvider.sys.mjs
++++ b/src/zen/urlbar/ZenUBActionsProvider.sys.mjs
+@@ -442,10 +442,11 @@ export class ZenUrlbarProviderGlobalActions extends UrlbarProvider {
+    * @returns {object} An object describing the view update.
+    */
+   getViewUpdate(result) {
+-    const prettyIconIsSvg =
++    const prettyIconIsImage =
+       result.payload.prettyIcon &&
+-      (result.payload.prettyIcon.endsWith(".svg") ||
+-        result.payload.prettyIcon.endsWith(".png"));
++      /^(?:https?:\/\/|data:image\/|chrome:\/\/|resource:\/\/|moz-extension:\/\/|blob:)/i.test(
++        result.payload.prettyIcon
++      );
+     return {
+       icon: {
+         attributes: {
+@@ -468,7 +469,7 @@ export class ZenUrlbarProviderGlobalActions extends UrlbarProvider {
+       prettyNameTitle: {
+         /* eslint-disable-next-line no-nested-ternary */
+         textContent: result.payload.prettyName
+-          ? prettyIconIsSvg || !result.payload.prettyIcon
++          ? prettyIconIsImage || !result.payload.prettyIcon
+             ? result.payload.prettyName
+             : `${result.payload.prettyIcon}  ${result.payload.prettyName}`
+           : "",
+@@ -477,7 +478,7 @@ export class ZenUrlbarProviderGlobalActions extends UrlbarProvider {
+       prettyNameIcon: {
+         attributes: {
+           src: result.payload.prettyIcon || "",
+-          hidden: !prettyIconIsSvg || !result.payload.prettyIcon,
++          hidden: !prettyIconIsImage || !result.payload.prettyIcon,
+         },
+       },
+     };

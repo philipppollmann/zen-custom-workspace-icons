@@ -1,0 +1,317 @@
+/*
+ * Zen Custom Workspace Icons
+ *
+ * Zen creates workspace switcher buttons as:
+ * #zen-workspaces-button > toolbarbutton[zen-workspace-id]
+ *
+ * Preference string values are exposed as CSS variables. Icon values must be
+ * CSS image values, for example:
+ * url("https://example.com/icon.svg")
+ * url("data:image/svg+xml,%3Csvg ... %3E")
+ */
+
+:root {
+  --zcwi-icon-size: max(
+    8px,
+    calc(var(--uc-zen_custom_space_icons-icon_size, 18) * 1px)
+  );
+  --zcwi-icon-radius: calc(
+    var(--uc-zen_custom_space_icons-icon_radius, 4) * 1px
+  );
+  --zcwi-icon-fit: var(--uc-zen_custom_space_icons-icon_fit, contain);
+}
+
+#zen-workspaces-button > toolbarbutton::before,
+zen-workspace .zen-current-workspace-indicator-icon::before {
+  pointer-events: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: var(--zcwi-icon-fit);
+  border-radius: var(--zcwi-icon-radius);
+}
+
+#zen-workspaces-button > toolbarbutton::before {
+  content: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--zcwi-icon-size);
+  height: var(--zcwi-icon-size);
+  transform: translate(-50%, -50%);
+}
+
+zen-workspace .zen-current-workspace-indicator-icon::before {
+  content: none;
+  position: absolute;
+  inset: 0;
+}
+
+@media (-moz-pref("uc.zen_custom_space_icons.space_1.enabled")) {
+  #zen-workspaces-button > toolbarbutton:nth-of-type(1)::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_1-icon);
+  }
+
+  #zen-workspaces-button
+    > toolbarbutton:nth-of-type(1)
+    > .zen-workspace-icon {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(1) .zen-current-workspace-indicator-icon {
+    color: transparent !important;
+    fill: transparent !important;
+  }
+
+  zen-workspace:nth-of-type(1) .zen-current-workspace-indicator-icon > * {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(1) .zen-current-workspace-indicator-icon::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_1-icon);
+  }
+}
+
+@media (-moz-pref("uc.zen_custom_space_icons.space_2.enabled")) {
+  #zen-workspaces-button > toolbarbutton:nth-of-type(2)::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_2-icon);
+  }
+
+  #zen-workspaces-button
+    > toolbarbutton:nth-of-type(2)
+    > .zen-workspace-icon {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(2) .zen-current-workspace-indicator-icon {
+    color: transparent !important;
+    fill: transparent !important;
+  }
+
+  zen-workspace:nth-of-type(2) .zen-current-workspace-indicator-icon > * {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(2) .zen-current-workspace-indicator-icon::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_2-icon);
+  }
+}
+
+@media (-moz-pref("uc.zen_custom_space_icons.space_3.enabled")) {
+  #zen-workspaces-button > toolbarbutton:nth-of-type(3)::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_3-icon);
+  }
+
+  #zen-workspaces-button
+    > toolbarbutton:nth-of-type(3)
+    > .zen-workspace-icon {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(3) .zen-current-workspace-indicator-icon {
+    color: transparent !important;
+    fill: transparent !important;
+  }
+
+  zen-workspace:nth-of-type(3) .zen-current-workspace-indicator-icon > * {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(3) .zen-current-workspace-indicator-icon::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_3-icon);
+  }
+}
+
+@media (-moz-pref("uc.zen_custom_space_icons.space_4.enabled")) {
+  #zen-workspaces-button > toolbarbutton:nth-of-type(4)::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_4-icon);
+  }
+
+  #zen-workspaces-button
+    > toolbarbutton:nth-of-type(4)
+    > .zen-workspace-icon {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(4) .zen-current-workspace-indicator-icon {
+    color: transparent !important;
+    fill: transparent !important;
+  }
+
+  zen-workspace:nth-of-type(4) .zen-current-workspace-indicator-icon > * {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(4) .zen-current-workspace-indicator-icon::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_4-icon);
+  }
+}
+
+@media (-moz-pref("uc.zen_custom_space_icons.space_5.enabled")) {
+  #zen-workspaces-button > toolbarbutton:nth-of-type(5)::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_5-icon);
+  }
+
+  #zen-workspaces-button
+    > toolbarbutton:nth-of-type(5)
+    > .zen-workspace-icon {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(5) .zen-current-workspace-indicator-icon {
+    color: transparent !important;
+    fill: transparent !important;
+  }
+
+  zen-workspace:nth-of-type(5) .zen-current-workspace-indicator-icon > * {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(5) .zen-current-workspace-indicator-icon::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_5-icon);
+  }
+}
+
+@media (-moz-pref("uc.zen_custom_space_icons.space_6.enabled")) {
+  #zen-workspaces-button > toolbarbutton:nth-of-type(6)::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_6-icon);
+  }
+
+  #zen-workspaces-button
+    > toolbarbutton:nth-of-type(6)
+    > .zen-workspace-icon {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(6) .zen-current-workspace-indicator-icon {
+    color: transparent !important;
+    fill: transparent !important;
+  }
+
+  zen-workspace:nth-of-type(6) .zen-current-workspace-indicator-icon > * {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(6) .zen-current-workspace-indicator-icon::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_6-icon);
+  }
+}
+
+@media (-moz-pref("uc.zen_custom_space_icons.space_7.enabled")) {
+  #zen-workspaces-button > toolbarbutton:nth-of-type(7)::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_7-icon);
+  }
+
+  #zen-workspaces-button
+    > toolbarbutton:nth-of-type(7)
+    > .zen-workspace-icon {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(7) .zen-current-workspace-indicator-icon {
+    color: transparent !important;
+    fill: transparent !important;
+  }
+
+  zen-workspace:nth-of-type(7) .zen-current-workspace-indicator-icon > * {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(7) .zen-current-workspace-indicator-icon::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_7-icon);
+  }
+}
+
+@media (-moz-pref("uc.zen_custom_space_icons.space_8.enabled")) {
+  #zen-workspaces-button > toolbarbutton:nth-of-type(8)::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_8-icon);
+  }
+
+  #zen-workspaces-button
+    > toolbarbutton:nth-of-type(8)
+    > .zen-workspace-icon {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(8) .zen-current-workspace-indicator-icon {
+    color: transparent !important;
+    fill: transparent !important;
+  }
+
+  zen-workspace:nth-of-type(8) .zen-current-workspace-indicator-icon > * {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(8) .zen-current-workspace-indicator-icon::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_8-icon);
+  }
+}
+
+@media (-moz-pref("uc.zen_custom_space_icons.space_9.enabled")) {
+  #zen-workspaces-button > toolbarbutton:nth-of-type(9)::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_9-icon);
+  }
+
+  #zen-workspaces-button
+    > toolbarbutton:nth-of-type(9)
+    > .zen-workspace-icon {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(9) .zen-current-workspace-indicator-icon {
+    color: transparent !important;
+    fill: transparent !important;
+  }
+
+  zen-workspace:nth-of-type(9) .zen-current-workspace-indicator-icon > * {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(9) .zen-current-workspace-indicator-icon::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_9-icon);
+  }
+}
+
+@media (-moz-pref("uc.zen_custom_space_icons.space_10.enabled")) {
+  #zen-workspaces-button > toolbarbutton:nth-of-type(10)::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_10-icon);
+  }
+
+  #zen-workspaces-button
+    > toolbarbutton:nth-of-type(10)
+    > .zen-workspace-icon {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(10) .zen-current-workspace-indicator-icon {
+    color: transparent !important;
+    fill: transparent !important;
+  }
+
+  zen-workspace:nth-of-type(10) .zen-current-workspace-indicator-icon > * {
+    opacity: 0 !important;
+  }
+
+  zen-workspace:nth-of-type(10) .zen-current-workspace-indicator-icon::before {
+    content: "";
+    background-image: var(--uc-zen_custom_space_icons-space_10-icon);
+  }
+}
